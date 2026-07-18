@@ -1,9 +1,16 @@
 import { rateLimit } from '@/lib/rate-limit';
-import { sanitizeInput } from '@/lib/sanitize';
-import { createZoneReport } from '@/lib/firebase/repositories';
 import { toErrorMessage } from '@/lib/errors';
 import { ERROR_MESSAGES } from '@/lib/constants';
+import { validateReportPayload } from '@/features/reports/validators/reportValidator';
+import { ZoneReportService } from '@/features/reports/services/zoneReportService';
+import type { ZoneReportInput } from '@/types';
 
+/**
+ * POST handler for creating a new zone report.
+ * Ultra-thin controller that delegates all logic to the service and validator.
+ * @param {Request} req - The incoming HTTP request
+ * @returns {Promise<Response>} The HTTP response
+ */
 export async function POST(req: Request): Promise<Response> {
   const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
   const { success, limit, remaining, reset } = rateLimit(ip);
@@ -30,21 +37,17 @@ export async function POST(req: Request): Promise<Response> {
 
   try {
     const body = await req.json();
-    const { zoneId, crowdLevel, incidentType, message } = body;
     
-    if (!zoneId || !crowdLevel || !message) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
+    // Validation Layer
+    const validation = validateReportPayload(body);
+    if (!validation.isValid) {
+      return new Response(JSON.stringify({ error: validation.error }), { 
+        status: validation.status || 400 
+      });
     }
 
-    const sanitizedMessage = sanitizeInput(message, 500);
-    const sanitizedIncidentType = incidentType ? sanitizeInput(incidentType, 100) : undefined;
-
-    const result = await createZoneReport({
-      zoneId,
-      crowdLevel,
-      incidentType: sanitizedIncidentType,
-      message: sanitizedMessage
-    });
+    // Service Layer
+    const result = await ZoneReportService.submitReport(body as ZoneReportInput);
 
     if (!result.success) {
       throw new Error(result.error || ERROR_MESSAGES.GENERIC_FAILURE);

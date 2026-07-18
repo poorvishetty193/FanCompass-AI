@@ -22,7 +22,7 @@ export function trackEvent(
       void eventName;
       void params;
     }
-  } catch (_error: unknown) {
+  } catch {
     // Swallow errors so analytics never break the app
   }
 }

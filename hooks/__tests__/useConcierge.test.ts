@@ -1,9 +1,9 @@
 import { renderHook, act } from '@testing-library/react';
-import { useConcierge } from '../useConcierge';
+import { useConcierge } from '@/features/chat/hooks/useConcierge';
 
 global.fetch = jest.fn();
 
-jest.mock('../useAccessibilityMode', () => ({
+jest.mock('@/features/chat/hooks/useAccessibilityMode', () => ({
   useAccessibilityMode: () => ({ isAccessibilityMode: false })
 }));
 

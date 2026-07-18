@@ -1,88 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
-import Navigation from '@/components/Navigation';
-import { useZoneReports } from '@/hooks/useZoneReports';
-import { ZONES, ERROR_MESSAGES } from '@/lib/constants';
-import { toErrorMessage } from '@/lib/errors';
-import { SubmitReportForm } from '@/components/dashboard/SubmitReportForm';
-import { RecentReportsTable } from '@/components/dashboard/RecentReportsTable';
+import { Navigation } from '@/features/navigation/components/Navigation';
+import { SubmitReportForm } from '@/features/dashboard/components/SubmitReportForm';
+import { RecentReportsTable } from '@/features/dashboard/components/RecentReportsTable';
+import { useStaffDashboard } from '@/features/dashboard/hooks/useStaffDashboard';
+import { useZoneReports } from '@/features/reports/hooks/useZoneReports';
 
-type CrowdLevel = 'low' | 'medium' | 'high' | 'critical';
-
-export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+/**
+ * Pure orchestration container for the Staff Dashboard.
+ * Delegates all state management to hooks and UI rendering to presentational components.
+ */
+export default function DashboardContainer() {
+  const {
+    user, isAuthLoading,
+    zoneId, setZoneId,
+    crowdLevel, setCrowdLevel,
+    incidentType, setIncidentType,
+    message, setMessage,
+    isSubmitting, submitError,
+    handleLogin, handleSubmit
+  } = useStaffDashboard();
 
   const { reports, isLoading: reportsLoading, error: reportsError } = useZoneReports();
-  const [zoneId, setZoneId] = useState<string>(ZONES.NORTH_GATE);
-  const [crowdLevel, setCrowdLevel] = useState<CrowdLevel>('low');
-  const [incidentType, setIncidentType] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    try {
-      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-        setIsAuthLoading(false);
-      }, (error) => {
-        console.error('Auth error:', error);
-        setIsAuthLoading(false);
-      });
-    } catch (err) {
-      console.error('Auth initialization error:', err);
-      setIsAuthLoading(false);
-    }
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, []);
-
-  const handleLogin = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (err: unknown) {
-      console.error('Login error:', toErrorMessage(err));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    try {
-      const token = await user.getIdToken();
-      const res = await fetch('/api/zone-reports', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ zoneId, crowdLevel, incidentType, message })
-      });
-
-      if (!res.ok) {
-        if (res.status === 429) throw new Error(ERROR_MESSAGES.RATE_LIMITED);
-        if (res.status === 401) throw new Error(ERROR_MESSAGES.AUTH_REQUIRED);
-        throw new Error(ERROR_MESSAGES.GENERIC_FAILURE);
-      }
-
-      setMessage('');
-      setIncidentType('');
-    } catch (err: unknown) {
-      setSubmitError(toErrorMessage(err));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   if (isAuthLoading) {
     return <div className="flex min-h-[100dvh] items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;

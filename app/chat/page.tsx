@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useConcierge } from '@/hooks/useConcierge';
-import Navigation from '@/components/Navigation';
+import { useConcierge } from '@/features/chat/hooks/useConcierge';
+import { Navigation } from '@/features/navigation/components/Navigation';
 
 export default function ChatPage() {
   const { messages, isLoading, error, language, handleLanguageChange, sendMessage } = useConcierge();

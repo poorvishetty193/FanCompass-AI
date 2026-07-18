@@ -33,7 +33,9 @@ export function useZoneReports(zoneId?: string): UseZoneReportsReturn {
         setIsLoading(false);
       }, zoneId);
     } catch (err: unknown) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(toErrorMessage(err) || ERROR_MESSAGES.GENERIC_FAILURE);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
     return () => {

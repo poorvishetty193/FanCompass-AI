@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react';
-import { useZoneReports } from '../useZoneReports';
+import { useZoneReports } from '@/features/reports/hooks/useZoneReports';
 import { subscribeToZoneReports } from '@/lib/firebase/repositories';
 
 jest.mock('@/lib/firebase/repositories', () => ({

@@ -34,7 +34,7 @@ describe('POST /api/concierge', () => {
     return {
       json: async () => body,
       headers: {
-        get: (key: string) => null
+        get: () => null
       }
     } as unknown as Request;
   };
