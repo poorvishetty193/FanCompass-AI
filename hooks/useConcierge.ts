@@ -35,7 +35,7 @@ export function useConcierge(): UseConciergeReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [language, setLanguage] = useState(LANGUAGES.ENGLISH);
+  const [language, setLanguage] = useState<string>(LANGUAGES.ENGLISH);
   const { isAccessibilityMode } = useAccessibilityMode();
 
   const handleLanguageChange = (newLanguage: string): void => {
