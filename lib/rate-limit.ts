@@ -9,21 +9,28 @@ interface RateLimitStore {
 
 const store: RateLimitStore = {};
 
+/** Result returned by the rate limiter for each request. */
 export interface RateLimitResult {
+  /** Whether the request is allowed through. */
   success: boolean;
+  /** Maximum requests allowed per window. */
   limit: number;
+  /** Remaining requests in the current window. */
   remaining: number;
+  /** Unix timestamp (ms) when the current window resets. */
   reset: number;
 }
 
 /**
- * In-memory rate limiting implementation.
- * @param {string} ip The IP or identifier for the requester
- * @returns {RateLimitResult} The rate limit status
+ * In-memory sliding-window rate limiter.
+ * Probabilistically cleans up expired entries on ~10 % of calls.
+ * @param {string} [ip='anonymous'] - IP address or unique client identifier
+ * @returns {RateLimitResult} Object indicating whether the request is allowed
  */
 export function rateLimit(ip: string = 'anonymous'): RateLimitResult {
   const now = Date.now();
-  
+
+  // Probabilistic cleanup of expired entries (~10 % of calls)
   if (Math.random() < 0.1) {
     for (const key in store) {
       if (store[key] && store[key].resetTime < now) {
@@ -33,17 +40,17 @@ export function rateLimit(ip: string = 'anonymous'): RateLimitResult {
   }
 
   const record = store[ip];
-  
+
   if (!record || record.resetTime < now) {
     store[ip] = {
       count: 1,
-      resetTime: now + RATE_LIMIT.WINDOW_MS
+      resetTime: now + RATE_LIMIT.WINDOW_MS,
     };
     return {
       success: true,
       limit: RATE_LIMIT.MAX_REQUESTS,
       remaining: RATE_LIMIT.MAX_REQUESTS - 1,
-      reset: store[ip].resetTime
+      reset: store[ip].resetTime,
     };
   }
 
@@ -52,7 +59,7 @@ export function rateLimit(ip: string = 'anonymous'): RateLimitResult {
       success: false,
       limit: RATE_LIMIT.MAX_REQUESTS,
       remaining: 0,
-      reset: record.resetTime
+      reset: record.resetTime,
     };
   }
 
@@ -61,6 +68,6 @@ export function rateLimit(ip: string = 'anonymous'): RateLimitResult {
     success: true,
     limit: RATE_LIMIT.MAX_REQUESTS,
     remaining: RATE_LIMIT.MAX_REQUESTS - record.count,
-    reset: record.resetTime
+    reset: record.resetTime,
   };
 }
